@@ -1,18 +1,13 @@
-# Secrets
 .env
 
-# Python
 venv/
 __pycache__/
 *.pyc
 db.sqlite3
 
-# Node
 node_modules/
 
-# Django / deployment
 staticfiles/
 .vercel/
-
-# Editor
 .vscode/
+static/css/output.css
