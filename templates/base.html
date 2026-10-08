@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Travel Planner{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <nav class="bg-white px-6 py-3 font-semibold shadow">Travel Planner</nav>
+  <main class="mx-auto max-w-6xl p-6">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
