@@ -1,3 +1,10 @@
+# =====================================================================
+# File: accounts/admin.py
+# Purpose: Shows accounts models in the Django admin site.
+# Contains:
+#   - ProfileAdmin: list columns and search for Profiles.
+# =====================================================================
+
 from django.contrib import admin
 
 from .models import Profile
