@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if trip %}Budget & Expenses — {{ trip.title }}{% else %}Budget & Expenses{% endif %} | Travel Planner{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Navigation & Trip Switcher -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+      <a href="{% url 'dashboard:home' %}" class="font-medium text-blue-600 hover:text-blue-700">Dashboard</a>
+      <span>/</span>
+      <span class="text-gray-700 font-medium">Budget &amp; Expenses</span>
+    </div>
+
+    {% if user_trips %}
+    <div class="flex items-center gap-2">
+      <label for="trip-switcher" class="text-xs font-medium uppercase tracking-wide text-gray-500">Switch Trip:</label>
+      <select
+        id="trip-switcher"
+        onchange="if (this.value) window.location.href = this.value;"
+        class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm focus:border-blue-500 focus:outline-none"
+      >
+        {% for t in user_trips %}
+        <option value="{% url 'budget:expense_list' trip_id=t.id %}" {% if trip and t.id == trip.id %}selected{% endif %}>
+          {{ t.title }} ({{ t.destination }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Flash Messages -->
+  {% if messages %}
+  <div class="space-y-2">
+    {% for message in messages %}
+    <div class="rounded-lg border px-4 py-3 text-sm {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700{% else %}border-emerald-200 bg-emerald-50 text-emerald-800{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not trip %}
+  <!-- Empty State when user has no trips yet -->
+  <div class="rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
+    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 font-bold text-xl">$</div>
+    <h1 class="text-xl font-bold text-gray-900">No Trips Found Yet</h1>
+    <p class="mx-auto mt-2 max-w-md text-sm text-gray-500">
+      Create a trip first to set an overall budget, generate AI-proposed pricing, and track your travel expenses.
+    </p>
+    <div class="mt-6 flex justify-center gap-3">
+      <a href="/admin/trips/trip/add/" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+        + Create a Trip
+      </a>
+      <a href="{% url 'dashboard:home' %}" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+  {% else %}
+
+  <!-- Trip Header Card -->
+  <div
+    id="budget-page-root"
+    data-trip-id="{{ trip.id }}"
+    data-currency="{{ trip.currency }}"
+    data-propose-url="{% url 'budget:api_ai_propose' trip_id=trip.id %}"
+    data-apply-url="{% url 'budget:api_ai_apply' trip_id=trip.id %}"
+    class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+  >
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <div class="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500">
+          <span>{{ trip.destination }}, {{ trip.country }}</span>
+          <span>&bull;</span>
+          <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-blue-700">{{ trip.get_travel_style_display }} Style</span>
+          <span class="rounded-full bg-gray-100 px-2.5 py-0.5 capitalize text-gray-700">{{ trip.status }}</span>
+        </div>
+        <h1 class="mt-1.5 text-2xl font-bold text-gray-900">{{ trip.title }}</h1>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          id="btn-toggle-budget-form"
+          class="rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          Set Budget
+        </button>
+        <button
+          type="button"
+          id="btn-ai-propose"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+        >
+          <span>&#10024; Propose Pricing with AI</span>
+        </button>
+        <a
+          href="{% url 'budget:expense_create' trip_id=trip.id %}"
+          class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
+          + Add Expense
+        </a>
+      </div>
+    </div>
+
+    <!-- Collapsible Set Overall Budget Form -->
+    <div id="set-budget-drawer" class="mt-5 hidden rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+      <form method="post" action="{% url 'budget:set_budget' trip_id=trip.id %}" class="flex flex-wrap items-end gap-3">
+        {% csrf_token %}
+        <div class="w-full sm:w-64">
+          <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-700">
+            Overall Trip Budget ({{ trip.currency }})
+          </label>
+          {{ budget_form.budget }}
+        </div>
+        <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+          Save Budget
+        </button>
+        <button type="button" id="btn-cancel-budget-form" class="rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+          Cancel
+        </button>
+      </form>
+    </div>
+
+    <!-- 4 Summary Stat Cards (Matching Proposal Page 7) -->
+    <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-xl border border-gray-100 bg-gray-50/70 p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Dates ({{ trip.duration_days }} Days)</p>
+        <p class="mt-1 text-sm font-semibold text-gray-900">{{ trip.start_date|date:"Y-m-d" }} &rarr; {{ trip.end_date|date:"Y-m-d" }}</p>
+      </div>
+
+      <div class="rounded-xl border border-gray-100 bg-gray-50/70 p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Travelers</p>
+        <p class="mt-1 text-sm font-semibold text-gray-900">{{ trip.travelers }} {% if trip.travelers == 1 %}Person{% else %}Persons{% endif %}</p>
+      </div>
+
+      <div class="rounded-xl border border-gray-100 bg-gray-50/70 p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Total Budget</p>
+        <p class="mt-1 text-lg font-bold text-gray-900">{{ trip.currency }} {{ summary.total_budget }}</p>
+      </div>
+
+      <div class="rounded-xl border border-gray-100 bg-gray-50/70 p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Remaining</p>
+        {% if summary.is_over_budget %}
+        <p class="mt-1 text-lg font-bold text-red-600">-{{ trip.currency }} {{ summary.remaining_abs }} (Over)</p>
+        {% else %}
+        <p class="mt-1 text-lg font-bold text-emerald-600">{{ trip.currency }} {{ summary.remaining_budget }}</p>
+        {% endif %}
+        <p class="mt-0.5 text-xs text-gray-500">Spent: {{ trip.currency }} {{ summary.total_spent }} ({{ summary.percent_used }}%)</p>
+      </div>
+    </div>
+
+    <!-- Overall Budget Progress Bar -->
+    <div class="mt-4">
+      <div class="h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
+        <div
+          class="h-full rounded-full transition-all {% if summary.is_over_budget %}bg-red-500{% elif summary.percent_used >= 85 %}bg-amber-500{% else %}bg-blue-600{% endif %}"
+          style="width: {{ summary.progress_bar_width }}%;"
+        ></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Proposed Budget & Pricing Panel (Hidden until triggered) -->
+  <div id="ai-proposal-container" class="hidden rounded-2xl border border-indigo-200 bg-white p-6 shadow-sm">
+    <div id="ai-loading-state" class="hidden py-8 text-center">
+      <div class="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
+      <p class="mt-3 text-sm font-medium text-gray-700">Gemini AI is estimating pricing for {{ trip.destination }} ({{ trip.duration_days }} days, {{ trip.travelers }} traveler{{ trip.travelers|pluralize }})...</p>
+    </div>
+
+    <div id="ai-error-state" class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"></div>
+
+    <div id="ai-result-state" class="hidden space-y-5">
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
+        <div>
+          <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+            &#10024; Gemini AI Budget Proposal
+          </span>
+          <h2 class="mt-1 text-lg font-bold text-gray-900">
+            Recommended Budget: <span id="ai-rec-total" class="text-indigo-600"></span>
+          </h2>
+          <p id="ai-summary-text" class="mt-1 text-sm text-gray-600"></p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            id="btn-apply-budget-only"
+            class="rounded-lg border border-indigo-300 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+          >
+            Apply Recommended Budget Only
+          </button>
+          <button
+            type="button"
+            id="btn-apply-budget-and-items"
+            class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+          >
+            Apply Budget + Add Proposed Expenses
+          </button>
+        </div>
+      </div>
+
+      <!-- AI Category Pricing Cards -->
+      <div>
+        <h3 class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Category Pricing Breakdown</h3>
+        <div id="ai-categories-grid" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+      </div>
+
+      <!-- AI Proposed Expense Items Preview -->
+      <div>
+        <h3 class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Proposed Expense Items</h3>
+        <div id="ai-items-list" class="divide-y divide-gray-100 rounded-xl border border-gray-200"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Breakdown Summary & Filter Pills -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Category Breakdown Card -->
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <h2 class="text-base font-bold text-gray-900">Spending by Category</h2>
+      <p class="text-xs text-gray-500">Database-calculated breakdown across 6 categories</p>
+
+      <div class="mt-4 space-y-3">
+        {% for cat in summary.category_breakdown %}
+        <div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2 font-medium text-gray-700">
+              <span class="inline-block h-2.5 w-2.5 rounded-full" style="background-color: {{ cat.color }};"></span>
+              {{ cat.label }}
+              <span class="text-xs text-gray-400">({{ cat.count }})</span>
+            </span>
+            <span class="font-semibold text-gray-900">{{ trip.currency }} {{ cat.amount }}</span>
+          </div>
+          <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+            <div class="h-full rounded-full" style="width: {{ cat.percentage }}%; background-color: {{ cat.color }};"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Expenses List Card -->
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">Expenses ({{ summary.expense_count }})</h2>
+          <p class="text-xs text-gray-500">Add, edit, or delete trip expenses</p>
+        </div>
+        <a
+          href="{% url 'budget:expense_create' trip_id=trip.id %}"
+          class="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+        >
+          + New Expense
+        </a>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="mt-4 flex flex-wrap gap-1.5">
+        <a
+          href="{% url 'budget:expense_list' trip_id=trip.id %}"
+          class="rounded-full px-3 py-1 text-xs font-medium {% if not selected_category %}bg-gray-900 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}"
+        >
+          All
+        </a>
+        {% for code, label in categories %}
+        <a
+          href="{% url 'budget:expense_list' trip_id=trip.id %}?category={{ code }}"
+          class="rounded-full px-3 py-1 text-xs font-medium {% if selected_category == code %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}"
+        >
+          {{ label }}
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- Expenses Rows -->
+      {% if expenses %}
+      <div class="mt-4 divide-y divide-gray-100">
+        {% for expense in expenses %}
+        <div class="flex flex-wrap items-center justify-between gap-4 py-3.5">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="truncate text-sm font-semibold text-gray-900">{{ expense.title }}</p>
+              {% if expense.is_ai_generated %}
+              <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">&#10024; AI Proposed</span>
+              {% endif %}
+            </div>
+            <div class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+              <span class="rounded bg-gray-100 px-2 py-0.5 font-medium text-gray-700">{{ expense.get_category_display }}</span>
+              <span>&bull;</span>
+              <span>{{ expense.date|date:"Y-m-d" }}</span>
+              {% if expense.notes %}
+              <span>&bull;</span>
+              <span class="truncate max-w-xs">{{ expense.notes }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-bold text-gray-900">{{ trip.currency }} {{ expense.amount }}</span>
+            <a
+              href="{% url 'budget:expense_edit' trip_id=trip.id expense_id=expense.id %}"
+              class="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            >
+              Edit
+            </a>
+            <form
+              method="post"
+              action="{% url 'budget:expense_delete' trip_id=trip.id expense_id=expense.id %}"
+              onsubmit="return confirm('Delete this expense?');"
+              class="inline"
+            >
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="py-10 text-center">
+        <p class="text-sm text-gray-500">No expenses logged{% if selected_category %} in this category{% endif %} yet.</p>
+        <p class="mt-1 text-xs text-gray-400">Click <strong>&#10024; Propose Pricing with AI</strong> or <strong>+ Add Expense</strong> above to get started.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/expenses.js' %}"></script>
+{% endblock %}
+
