@@ -1,18 +1,50 @@
+{% comment %}
+=====================================================================
+File: templates/base.html
+Purpose: The master page layout. Every other page "extends" this file,
+         so the navbar, fonts, styles and footer live in ONE place.
+Contains:
+  - <head>: page title, Inter font, compiled Tailwind stylesheet
+  - Navbar        (partials/navbar.html)
+  - Flash messages (partials/messages.html)
+  - Main area     (block: content)  <- each page fills this in
+  - Footer        (partials/footer.html)
+  - common.js     (small shared JavaScript)
+Blocks a page can fill in:
+  title, extra_head, navbar, content, footer, extra_js
+=====================================================================
+{% endcomment %}
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Travel Planner{% endblock %}</title>
+
+  {# Inter font (the font used in the design) #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  {# Compiled Tailwind CSS (built from static/src/input.css by "npm run dev:css") #}
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
-  {% block head %}{% endblock %}
+
+  {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-900">
-  <nav class="bg-white px-6 py-3 font-semibold shadow">Travel Planner</nav>
-  <main class="mx-auto max-w-6xl p-6">
+<body class="flex min-h-full flex-col font-sans">
+
+  {% block navbar %}{% include "partials/navbar.html" %}{% endblock %}
+
+  {% include "partials/messages.html" %}
+
+  <main class="flex-1">
     {% block content %}{% endblock %}
   </main>
-  {% block scripts %}{% endblock %}
+
+  {% block footer %}{% include "partials/footer.html" %}{% endblock %}
+
+  <script src="{% static 'js/common.js' %}" defer></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
