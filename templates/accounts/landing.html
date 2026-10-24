@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% comment %}
+=====================================================================
+File: templates/accounts/landing.html
+Purpose: The public home page ("/") that visitors see before logging in.
+Contains:
+  - Hero section: headline, short pitch, "Get started" / "Log in" buttons
+  - Feature cards: what the app can do
+  - "How it works" steps
+  - Final call-to-action banner
+Used by: accounts.views.landing_page
+(Logged-in users never see this page; they are redirected to their trips.)
+=====================================================================
+{% endcomment %}
+
+{% block title %}Plan your next trip with AI | Travel Planner{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="bg-white border-b border-slate-200">
+  <div class="container-page py-16 sm:py-24 text-center">
+    <span class="badge badge-blue">AI-powered trip planning</span>
+    <h1 class="mt-4 text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
+      Plan trips that feel<br class="hidden sm:block"> <span class="text-brand-600">made for you</span>
+    </h1>
+    <p class="mt-5 max-w-2xl mx-auto text-lg text-slate-600">
+      Save your destinations, dates, budget and interests in one place, and let
+      Travel Planner turn them into a trip you can actually take.
+    </p>
+    <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+      <a href="{% url 'accounts:register' %}" class="btn btn-primary">Get started - it's free</a>
+      <a href="{% url 'accounts:login' %}" class="btn btn-secondary">Log in</a>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="container-page py-16">
+  <h2 class="text-2xl font-bold text-center text-slate-900">Everything for your trip in one place</h2>
+  <p class="mt-2 text-center text-slate-600">Simple tools that keep planning calm instead of messy.</p>
+
+  <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="card p-6">
+      <div class="h-10 w-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-xl">🗺️</div>
+      <h3 class="mt-4 font-semibold text-slate-900">Trip dashboard</h3>
+      <p class="mt-1 text-sm text-slate-600">Create, edit and organise all your trips with dates and status at a glance.</p>
+    </div>
+    <div class="card p-6">
+      <div class="h-10 w-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-xl">💰</div>
+      <h3 class="mt-4 font-semibold text-slate-900">Budget &amp; travelers</h3>
+      <p class="mt-1 text-sm text-slate-600">Set a budget and group size so every plan fits your real limits.</p>
+    </div>
+    <div class="card p-6">
+      <div class="h-10 w-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-xl">🏷️</div>
+      <h3 class="mt-4 font-semibold text-slate-900">Your interests</h3>
+      <p class="mt-1 text-sm text-slate-600">Add tags like food, hiking or museums to shape what we suggest.</p>
+    </div>
+    <div class="card p-6">
+      <div class="h-10 w-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-xl">✨</div>
+      <h3 class="mt-4 font-semibold text-slate-900">AI suggestions</h3>
+      <p class="mt-1 text-sm text-slate-600">Get itinerary ideas built from your trip details and preferences.</p>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="bg-white border-y border-slate-200">
+  <div class="container-page py-16">
+    <h2 class="text-2xl font-bold text-center text-slate-900">How it works</h2>
+    <div class="mt-10 grid gap-8 sm:grid-cols-3">
+      <div class="text-center">
+        <div class="mx-auto h-10 w-10 rounded-full bg-brand-600 text-white font-semibold flex items-center justify-center">1</div>
+        <h3 class="mt-4 font-semibold text-slate-900">Create an account</h3>
+        <p class="mt-1 text-sm text-slate-600">Sign up with your email in under a minute.</p>
+      </div>
+      <div class="text-center">
+        <div class="mx-auto h-10 w-10 rounded-full bg-brand-600 text-white font-semibold flex items-center justify-center">2</div>
+        <h3 class="mt-4 font-semibold text-slate-900">Add your trip</h3>
+        <p class="mt-1 text-sm text-slate-600">Enter where, when, budget and what you love.</p>
+      </div>
+      <div class="text-center">
+        <div class="mx-auto h-10 w-10 rounded-full bg-brand-600 text-white font-semibold flex items-center justify-center">3</div>
+        <h3 class="mt-4 font-semibold text-slate-900">Get your plan</h3>
+        <p class="mt-1 text-sm text-slate-600">Explore destinations and AI-generated ideas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final call to action -->
+<section class="container-page py-16">
+  <div class="card p-8 sm:p-12 text-center">
+    <h2 class="text-2xl font-bold text-slate-900">Ready to plan your next adventure?</h2>
+    <p class="mt-2 text-slate-600">Join and start your first trip today.</p>
+    <a href="{% url 'accounts:register' %}" class="btn btn-primary mt-6">Create free account</a>
+  </div>
+</section>
+{% endblock %}

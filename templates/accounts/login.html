@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% comment %}
+=====================================================================
+File: templates/accounts/login.html
+Purpose: The "Welcome back" log-in page (/accounts/login/).
+Contains:
+  - A centered white card with the log-in form
+  - Fields: Email Address, Password, "Remember me" checkbox
+  - A hidden "next" field so users return to the page they wanted
+  - Error box for wrong email/password
+  - Link to the register page for new users
+Used by: accounts.views.EmailLoginView  (form = accounts.forms.EmailLoginForm)
+=====================================================================
+{% endcomment %}
+
+{% block title %}Log in | Travel Planner{% endblock %}
+
+{% block content %}
+<div class="container-page py-12">
+  <div class="mx-auto max-w-md">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-slate-900">Welcome back</h1>
+      <p class="mt-1 text-sm text-slate-600">Log in to continue planning your trips.</p>
+    </div>
+
+    <div class="card p-6 sm:p-8">
+      <form method="post" novalidate class="space-y-5">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        {% if form.non_field_errors %}
+          <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        <div>
+          <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+          {{ form.username }}
+          {% for error in form.username.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div>
+          <label for="{{ form.password.id_for_label }}" class="form-label">{{ form.password.label }}</label>
+          {{ form.password }}
+          {% for error in form.password.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          {{ form.remember_me }}
+          {{ form.remember_me.label }}
+        </label>
+
+        <button type="submit" class="btn btn-primary w-full">Log in</button>
+      </form>
+    </div>
+
+    <p class="mt-6 text-center text-sm text-slate-600">
+      New here?
+      <a href="{% url 'accounts:register' %}" class="font-medium text-brand-600 hover:text-brand-700">Create an account</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

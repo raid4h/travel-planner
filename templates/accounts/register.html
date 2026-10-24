@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% comment %}
+=====================================================================
+File: templates/accounts/register.html
+Purpose: The "Create your account" page (/accounts/register/).
+Contains:
+  - A centered white card with the sign-up form
+  - Fields: Full Name, Email Address, Password, Confirm Password
+  - Error messages shown under each field (and a general error box)
+  - Link to the login page for people who already have an account
+Used by: accounts.views.RegisterView  (form = accounts.forms.RegisterForm)
+=====================================================================
+{% endcomment %}
+
+{% block title %}Create account | Travel Planner{% endblock %}
+
+{% block content %}
+<div class="container-page py-12">
+  <div class="mx-auto max-w-md">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-slate-900">Create your account</h1>
+      <p class="mt-1 text-sm text-slate-600">Start planning your trips in minutes.</p>
+    </div>
+
+    <div class="card p-6 sm:p-8">
+      <form method="post" novalidate class="space-y-5">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          <div>
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text and not field.errors %}
+              <p class="form-help">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary w-full">Create account</button>
+      </form>
+    </div>
+
+    <p class="mt-6 text-center text-sm text-slate-600">
+      Already have an account?
+      <a href="{% url 'accounts:login' %}" class="font-medium text-brand-600 hover:text-brand-700">Log in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
