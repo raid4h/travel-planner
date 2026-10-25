@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard | Travel Planner{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div
+  id="dashboard-root"
+  data-stats-url="{% url 'dashboard:api_stats' %}"
+  class="space-y-8"
+>
+  <!-- Top Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Travel Dashboard</h1>
+      <p class="mt-1 text-sm text-gray-500">Overview of your ongoing &amp; upcoming trips, budgets, and recent spending.</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a
+        href="/destinations/"
+        class="rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+      >
+        Explore Destinations
+      </a>
+      <a
+        href="{% url 'budget:index' %}"
+        class="rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+      >
+        Budget &amp; Expenses
+      </a>
+      <a
+        href="/admin/trips/trip/add/"
+        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+      >
+        + New Trip
+      </a>
+    </div>
+  </div>
+
+  <!-- 4 Top KPI Statistics Cards -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Active &amp; Upcoming Trips</p>
+      <p class="mt-2 text-2xl font-bold text-gray-900">{{ stats.ongoing_count|add:stats.upcoming_count }}</p>
+      <p class="mt-1 text-xs text-gray-500">
+        {{ stats.ongoing_count }} ongoing &bull; {{ stats.upcoming_count }} upcoming &bull; {{ stats.completed_count }} completed
+      </p>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total Planned Budget</p>
+      <p class="mt-2 text-2xl font-bold text-gray-900">${{ stats.total_budget }}</p>
+      <p class="mt-1 text-xs text-gray-500">Across {{ stats.total_trips }} non-archived trip{{ stats.total_trips|pluralize }}</p>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total Spent</p>
+      <p class="mt-2 text-2xl font-bold text-blue-600">${{ stats.total_spent }}</p>
+      <p class="mt-1 text-xs text-gray-500">Database-aggregated expenses</p>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Remaining Budget</p>
+      {% if stats.is_over_budget %}
+      <p class="mt-2 text-2xl font-bold text-red-600">-${{ stats.total_remaining_abs }}</p>
+      <p class="mt-1 text-xs text-red-500">Over overall planned budget</p>
+      {% else %}
+      <p class="mt-2 text-2xl font-bold text-emerald-600">${{ stats.total_remaining }}</p>
+      <p class="mt-1 text-xs text-gray-500">Available across trips</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Budget vs Actual Spending Bar Chart -->
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="mb-4">
+        <h2 class="text-base font-bold text-gray-900">Budget vs. Actual Spending</h2>
+        <p class="text-xs text-gray-500">Comparison per trip</p>
+      </div>
+      <div class="relative h-64">
+        <canvas id="tripBudgetBarChart"></canvas>
+        <div id="bar-chart-empty" class="hidden flex h-full items-center justify-center text-sm text-gray-400">
+          Add a trip to view budget comparison charts.
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Breakdown Doughnut Chart -->
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">Expenses by Category</h2>
+          <p class="text-xs text-gray-500">Breakdown across food, transport, stays &amp; more</p>
+        </div>
+
+        {% if overview.all_trips %}
+        <select
+          id="chart-trip-filter"
+          class="rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">All Trips</option>
+          {% for item in overview.all_trips %}
+          <option value="{{ item.id }}">{{ item.title }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+      </div>
+      <div class="relative h-64">
+        <canvas id="categoryDoughnutChart"></canvas>
+        <div id="doughnut-chart-empty" class="hidden flex h-full items-center justify-center text-sm text-gray-400">
+          Log expenses to see category distribution.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current (Ongoing) Trips -->
+  {% if overview.ongoing_trips %}
+  <section class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-900">Current Trips (Ongoing)</h2>
+      <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">{{ overview.ongoing_trips|length }} Active</span>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {% for item in overview.ongoing_trips %}
+      <div class="flex flex-col justify-between rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
+        <div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Ongoing</span>
+            <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {% if item.itinerary_status.has_itinerary %}bg-indigo-50 text-indigo-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+              Itinerary: {{ item.itinerary_status.label }}
+            </span>
+          </div>
+          <h3 class="mt-3 text-base font-bold text-gray-900">{{ item.title }}</h3>
+          <p class="text-xs font-medium text-gray-500">{{ item.destination }}, {{ item.country }}</p>
+          <p class="mt-1 text-xs text-gray-400">{{ item.start_date|date:"Y-m-d" }} &rarr; {{ item.end_date|date:"Y-m-d" }} ({{ item.duration_days }}d)</p>
+
+          <div class="mt-4">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-gray-600">Spent: {{ item.currency }} {{ item.spent }}</span>
+              {% if item.is_over_budget %}
+              <span class="text-red-600 font-semibold">Over: -{{ item.currency }} {{ item.remaining_abs }}</span>
+              {% else %}
+              <span class="text-emerald-600 font-semibold">Left: {{ item.currency }} {{ item.remaining }}</span>
+              {% endif %}
+            </div>
+            <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                class="h-full rounded-full {% if item.is_over_budget %}bg-red-500{% else %}bg-emerald-500{% endif %}"
+                style="width: {{ item.progress_bar_width }}%;"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex items-center justify-between border-t border-gray-100 pt-3 text-xs">
+          <span class="text-gray-500">Budget: <strong>{{ item.currency }} {{ item.budget }}</strong></span>
+          <a href="{% url 'budget:expense_list' trip_id=item.id %}" class="font-semibold text-blue-600 hover:text-blue-700">
+            Manage Budget &rarr;
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Upcoming Trips & Recent Expenses -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Upcoming Trips (2 cols) -->
+    <div class="space-y-4 lg:col-span-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-gray-900">Upcoming Trips</h2>
+        <span class="text-xs font-medium text-gray-500">{{ overview.upcoming_trips|length }} scheduled</span>
+      </div>
+
+      {% if overview.upcoming_trips %}
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {% for item in overview.upcoming_trips %}
+        <div class="flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">{{ item.travel_style_display }}</span>
+              <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium {% if item.itinerary_status.has_itinerary %}bg-indigo-50 text-indigo-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                {{ item.itinerary_status.label }}
+              </span>
+            </div>
+
+            <h3 class="mt-3 text-base font-bold text-gray-900">{{ item.title }}</h3>
+            <p class="text-xs font-medium text-gray-500">{{ item.destination }}, {{ item.country }}</p>
+            <p class="mt-1 text-xs text-gray-400">{{ item.start_date|date:"Y-m-d" }} &rarr; {{ item.end_date|date:"Y-m-d" }}</p>
+
+            <div class="mt-4">
+              <div class="flex justify-between text-xs">
+                <span class="text-gray-600">Spent: {{ item.currency }} {{ item.spent }}</span>
+                {% if item.is_over_budget %}
+                <span class="font-semibold text-red-600">-{{ item.currency }} {{ item.remaining_abs }}</span>
+                {% else %}
+                <span class="font-semibold text-emerald-600">Left: {{ item.currency }} {{ item.remaining }}</span>
+                {% endif %}
+              </div>
+              <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  class="h-full rounded-full {% if item.is_over_budget %}bg-red-500{% else %}bg-blue-600{% endif %}"
+                  style="width: {{ item.progress_bar_width }}%;"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs">
+            <span class="text-gray-500">Total: <strong>{{ item.currency }} {{ item.budget }}</strong></span>
+            <a href="{% url 'budget:expense_list' trip_id=item.id %}" class="font-semibold text-blue-600 hover:text-blue-700">
+              Budget &amp; AI Pricing &rarr;
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% elif overview.all_trips %}
+      <div class="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <p class="text-sm text-gray-600">No upcoming trips scheduled right now.</p>
+        <div class="mt-3 flex flex-wrap justify-center gap-2">
+          {% for item in overview.completed_trips %}
+          <a href="{% url 'budget:expense_list' trip_id=item.id %}" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-gray-50">
+            View Completed: {{ item.title }} &rarr;
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+        <p class="text-sm font-semibold text-gray-800">You don't have any trips yet.</p>
+        <p class="mt-1 text-xs text-gray-500">Create your first trip to test AI Budget Pricing and expense charts.</p>
+        <a
+          href="/admin/trips/trip/add/"
+          class="mt-4 inline-block rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+        >
+          + Create First Trip
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent Expenses Feed (1 col) -->
+    <div class="space-y-4">
+      <h2 class="text-lg font-bold text-gray-900">Recent Expenses</h2>
+
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        {% if overview.recent_expenses %}
+        <div class="divide-y divide-gray-100">
+          {% for exp in overview.recent_expenses %}
+          <div class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-gray-900">{{ exp.title }}</p>
+              <p class="truncate text-xs text-gray-500">
+                <a href="{% url 'budget:expense_list' trip_id=exp.trip_id %}" class="font-medium text-blue-600 hover:underline">{{ exp.trip.title }}</a>
+                &bull; {{ exp.get_category_display }} &bull; {{ exp.date|date:"M d" }}
+              </p>
+            </div>
+            <span class="whitespace-nowrap text-sm font-bold text-gray-900">{{ exp.trip.currency }} {{ exp.amount }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="py-8 text-center">
+          <p class="text-sm text-gray-500">No expenses recorded yet.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ chart_data|json_script:"dashboard-chart-data" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/charts.js' %}"></script>
+{% endblock %}
+
