@@ -8,16 +8,25 @@
 #   - RegisterView: sign-up page; logs the new user in afterwards
 #   - EmailLoginView: login page; supports "Remember me"
 #   - LogoutView: logs the user out (POST only) and shows a message
+#   - ProfileView: "My Profile" page to edit name, country and bio
+#   - PasswordChangeView: change password while staying logged in
 # =====================================================================
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 from django.views.generic import FormView
 
-from .forms import EmailLoginForm, RegisterForm
+from .forms import (
+    EmailLoginForm,
+    ProfileForm,
+    RegisterForm,
+    StyledPasswordChangeForm,
+)
 
 # How long "Remember me" keeps someone logged in (14 days, in seconds).
 REMEMBER_ME_SECONDS = 60 * 60 * 24 * 14
@@ -69,3 +78,33 @@ class LogoutView(auth_views.LogoutView):
         response = super().post(request, *args, **kwargs)
         messages.info(request, "You have been logged out.")
         return response
+
+
+class ProfileView(LoginRequiredMixin, FormView):
+    """Show and edit the logged-in user's profile."""
+
+    template_name = "accounts/profile.html"
+    form_class = ProfileForm
+    success_url = reverse_lazy("accounts:profile")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user  # ProfileForm needs to know who
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Your profile has been updated.")
+        return super().form_valid(form)
+
+
+class PasswordChangeView(LoginRequiredMixin, auth_views.PasswordChangeView):
+    """Change password. Django keeps the user logged in afterwards."""
+
+    template_name = "accounts/password_change.html"
+    form_class = StyledPasswordChangeForm
+    success_url = reverse_lazy("accounts:profile")
+
+    def form_valid(self, form):
+        messages.success(self.request, "Your password has been changed.")
+        return super().form_valid(form)

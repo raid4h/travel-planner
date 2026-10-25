@@ -1,6 +1,7 @@
 # =====================================================================
 # File: accounts/forms.py
-# Purpose: Forms for signing up and logging in.
+# Purpose: Forms for signing up, logging in, editing the profile and
+#          changing the password.
 # Contains:
 #   - StyledFormMixin: gives fields the Tailwind "form-input" look and
 #     a red outline when a field has an error
@@ -18,13 +19,11 @@ from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.exceptions import ValidationError
 
-
-
 User = get_user_model()
 
 INPUT_CLASS = "form-input"
 INVALID_CLASS = "form-input is-invalid"
-PASSWORD_DOTS = "\u2022" * 8  # the "........" shown inside empty password boxes
+PASSWORD_DOTS = "•" * 8  # the "........" shown inside empty password boxes
 
 
 class StyledFormMixin:
@@ -173,3 +172,67 @@ class EmailLoginForm(StyledFormMixin, AuthenticationForm):
     def clean_username(self):
         # Emails are saved in lower case, so compare in lower case.
         return self.cleaned_data["username"].strip().lower()
+
+
+class ProfileForm(StyledFormMixin, forms.Form):
+    """Edit the logged-in user's name and profile details."""
+
+    full_name = forms.CharField(
+        label="Full Name",
+        max_length=150,
+        widget=forms.TextInput(attrs={"autocomplete": "name"}),
+    )
+    home_country = forms.CharField(
+        label="Home Country",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "e.g. Bangladesh"}),
+    )
+    bio = forms.CharField(
+        label="Bio",
+        max_length=500,
+        required=False,
+        help_text="A few words about you and how you like to travel (max 500 characters).",
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Tell us about your travel style"}),
+    )
+
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        # Pre-fill the form with what is already saved.
+        saved = {
+            "full_name": user.get_full_name(),
+            "home_country": user.profile.home_country,
+            "bio": user.profile.bio,
+        }
+        # FormView passes initial={} (empty), so merge instead of setdefault.
+        kwargs["initial"] = {**saved, **(kwargs.get("initial") or {})}
+        super().__init__(*args, **kwargs)
+
+    def clean_full_name(self):
+        return " ".join(self.cleaned_data["full_name"].split())
+
+    def save(self):
+        first, last = split_full_name(self.cleaned_data["full_name"])
+        self.user.first_name = first
+        self.user.last_name = last
+        self.user.save(update_fields=["first_name", "last_name"])
+
+        profile = self.user.profile
+        profile.home_country = self.cleaned_data["home_country"].strip()
+        profile.bio = self.cleaned_data["bio"].strip()
+        profile.save()
+        return self.user
+
+
+class StyledPasswordChangeForm(StyledFormMixin, PasswordChangeForm):
+    """Django's change-password form with our labels and styling."""
+
+    highlight_all_on_form_error = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].label = "Current Password"
+        self.fields["new_password1"].label = "New Password"
+        self.fields["new_password1"].help_text = "Use at least 8 characters."
+        self.fields["new_password2"].label = "Confirm New Password"
+        self.fields["old_password"].widget.attrs.pop("autofocus", None)
