@@ -1,0 +1,25 @@
+{% comment %}
+  templates/destinations/weather_card.html   (Raidah)
+
+  An EMPTY weather card. It has no forecast numbers of its own:
+  static/js/weather.js fills #weather-days with 7 small day cards after
+  loading /api/destinations/<id>/weather/.
+  It is "included" by search.html, so other members can later reuse it
+  on their pages with:  {% include "destinations/weather_card.html" %}
+{% endcomment %}
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <div>
+      <h2 class="text-base font-bold">Weather forecast</h2>
+      <p id="weather-subtitle" class="text-xs text-slate-500">Select a saved destination</p>
+    </div>
+    {# Shows how old the cached data is, e.g. "Updated 2 h ago". Hidden until data arrives. #}
+    <span id="weather-updated" class="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"></span>
+  </div>
+
+  {# One-line status: "Loading weather…", an error, or the empty-state hint #}
+  <p id="weather-message" class="text-sm text-slate-500">Select a saved destination to see its 7-day forecast.</p>
+
+  {# weather.js puts the day cards here: 2 columns on phones, 4 on tablets, 7 on desktop #}
+  <div id="weather-days" class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7"></div>
+</section>

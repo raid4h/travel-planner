@@ -1,0 +1,37 @@
+{% comment %}
+  templates/destinations/map.html   (Raidah)
+
+  The map card. This file is only the EMPTY container; static/js/map.js turns
+  the <div id="map"> into a real Leaflet map and fills the day chips.
+  It is "included" by search.html, so Member 3 / Member 4 can reuse the same map
+  on their pages with:  {% include "destinations/map.html" %}
+{% endcomment %}
+<section class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  <div class="p-5 pb-3">
+    <h2 class="text-base font-bold">Trip map</h2>
+    <p class="text-xs text-slate-500">Saved destinations and the stops from your AI itinerary</p>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2 px-5 pb-4">
+    {# map.js creates the "All days / Day 1 / Day 2" buttons here #}
+    <div id="day-chips" class="flex flex-wrap gap-2"></div>
+    <div class="flex-1"></div>
+    {# These two checkboxes show or hide each group of markers on the map #}
+    <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700">
+      <input id="toggle-saved" type="checkbox" checked class="h-4 w-4 accent-blue-600">
+      Saved destinations
+    </label>
+    <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700">
+      <input id="toggle-stops" type="checkbox" checked class="h-4 w-4 accent-blue-600">
+      Itinerary stops
+    </label>
+  </div>
+
+  {# Visible until at least one itinerary stop exists (map.js hides it) #}
+  <p id="stops-empty" class="px-5 pb-3 text-xs text-slate-500">
+    No itinerary stops yet. Once an AI itinerary is generated, its places appear here.
+  </p>
+
+  {# The map itself. Leaflet needs a fixed height; "isolate" keeps its layers below the navbar. #}
+  <div id="map" class="isolate h-[420px] w-full border-t border-slate-200 lg:h-[520px]"></div>
+</section>
