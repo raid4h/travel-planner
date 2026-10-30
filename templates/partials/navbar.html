@@ -5,14 +5,14 @@ Purpose: The top navigation bar. base.html includes it on every page.
 Contains:
   - Logo + app name (links home)
   - Logged-out version: "Log In" link and "Get Started" button
-  - Logged-in version: Dashboard / My Trips links (current page is
-    highlighted), "+ New Trip" button and a user menu
-    (Profile, Log out)
+  - Logged-in version: Dashboard / My Trips / Destinations / Budget
+    links (current page is highlighted), "+ New Trip" button and a
+    user menu (Profile, Log out)
 URL names it needs:
   accounts:landing, accounts:login, accounts:register,
   accounts:profile, accounts:logout, trips:list, trips:create
-  and (optional) dashboard:home - the Dashboard link only appears
-  once that URL name exists.
+  and (optional) dashboard:home, destination-page, budget:index -
+  those links only appear once the URL name exists.
 =====================================================================
 {% endcomment %}
 {% url 'dashboard:home' as dashboard_url %}
@@ -43,6 +43,14 @@ URL names it needs:
           {% endif %}
           <a href="{% url 'trips:list' %}" class="nav-link {% if ns == 'trips' %}nav-link-active{% endif %}"
              {% if ns == 'trips' %}aria-current="page"{% endif %}>My Trips</a>
+          {% url 'destination-page' as destinations_url %}
+          {% if destinations_url %}
+            <a href="{{ destinations_url }}" class="nav-link {% if request.path == destinations_url %}nav-link-active{% endif %}">Destinations</a>
+          {% endif %}
+          {% url 'budget:index' as budget_url %}
+          {% if budget_url %}
+            <a href="{{ budget_url }}" class="nav-link {% if ns == 'budget' %}nav-link-active{% endif %}">Budget</a>
+          {% endif %}
         </div>
       {% endif %}
     </div>
@@ -84,24 +92,4 @@ URL names it needs:
             {# Logging out must be a POST request, so it is a small form #}
             <form method="post" action="{% url 'accounts:logout' %}">
               {% csrf_token %}
-              <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
-                <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
-                </svg>
-                Log out
-              </button>
-            </form>
-          </div>
-        </details>
-
-      {% else %}
-
-        <a href="{% url 'accounts:login' %}" class="nav-link">Log In</a>
-        <a href="{% url 'accounts:register' %}" class="btn-primary">Get Started</a>
-
-      {% endif %}
-    </div>
-
-  </nav>
-</header>
-{% endwith %}
+              <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm
