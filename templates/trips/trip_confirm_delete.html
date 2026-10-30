@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% comment %}
+=====================================================================
+File: templates/trips/trip_confirm_delete.html
+Purpose: The "Are you sure?" page shown before a trip is deleted
+         (/trips/<id>/delete/).
+Contains:
+  - A warning card with the trip's name, dates and destination
+  - "Cancel" (go back, nothing deleted) and "Yes, delete trip"
+    (a POST button that really deletes it)
+Used by: trips.views.TripDeleteView
+=====================================================================
+{% endcomment %}
+
+{% block title %}Delete trip | Travel Planner{% endblock %}
+
+{% block content %}
+<div class="container-page py-12">
+  <div class="mx-auto max-w-md">
+    <div class="card p-6 sm:p-8 text-center">
+
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-2xl" aria-hidden="true">⚠️</div>
+
+      <h1 class="mt-4 text-xl font-bold text-slate-900">Delete this trip?</h1>
+      <p class="mt-2 text-sm text-slate-600">
+        You are about to permanently delete <strong class="text-slate-900">{{ trip.title }}</strong>.
+        This cannot be undone.
+      </p>
+
+      <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">
+        <p>📍 {{ trip.destination }}{% if trip.country %}, {{ trip.country }}{% endif %}</p>
+        <p class="mt-1">📅 {{ trip.start_date|date:"M j, Y" }} – {{ trip.end_date|date:"M j, Y" }}</p>
+      </div>
+
+      <p class="mt-4 text-xs text-slate-500">
+        Want to keep it but hide it? <strong>Archive</strong> it from the trip page instead.
+      </p>
+
+      <form method="post" class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+        {% csrf_token %}
+        <a href="{% url 'trips:detail' trip.pk %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-danger">Yes, delete trip</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

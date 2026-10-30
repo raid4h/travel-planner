@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% comment %}
+=====================================================================
+File: templates/trips/trip_detail.html
+Purpose: One trip's full details page (/trips/<id>/).
+Contains:
+  - Back link, title, status badge, destination
+  - Action buttons: Edit, Archive / Restore (POST button), Delete
+  - Summary cards: dates, duration, travelers, travel style, budget
+  - Interest tags and notes
+  - A "Budget & expenses" shortcut (shown when that page exists)
+Used by: trips.views.TripDetailView
+=====================================================================
+{% endcomment %}
+
+{% block title %}{{ trip.title }} | Travel Planner{% endblock %}
+
+{% block content %}
+<div class="container-page py-8">
+  <div class="mx-auto max-w-3xl">
+
+    <a href="{% url 'trips:list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to my trips</a>
+
+    <!-- Header -->
+    <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-2xl font-bold text-slate-900 break-words">{{ trip.title }}</h1>
+          {% if trip.is_archived %}
+            <span class="badge badge-amber">Archived</span>
+          {% elif trip.status == "upcoming" %}
+            <span class="badge badge-blue">Upcoming</span>
+          {% elif trip.status == "ongoing" %}
+            <span class="badge badge-green">Ongoing</span>
+          {% else %}
+            <span class="badge badge-gray">Completed</span>
+          {% endif %}
+        </div>
+        <p class="mt-1 text-slate-600">📍 {{ trip.destination }}{% if trip.country %}, {{ trip.country }}{% endif %}</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="{% url 'trips:edit' trip.pk %}" class="btn btn-primary">Edit</a>
+        <form method="post" action="{% url 'trips:archive' trip.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary">{% if trip.is_archived %}Restore{% else %}Archive{% endif %}</button>
+        </form>
+        <a href="{% url 'trips:delete' trip.pk %}" class="btn btn-danger">Delete</a>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="mt-6 grid gap-4 sm:grid-cols-2">
+      <div class="card p-5">
+        <p class="stat-label">Dates</p>
+        <p class="mt-1 font-semibold text-slate-900">{{ trip.start_date|date:"M j, Y" }} – {{ trip.end_date|date:"M j, Y" }}</p>
+        <p class="mt-0.5 text-sm text-slate-600">{{ trip.duration_days }} day{{ trip.duration_days|pluralize }}</p>
+      </div>
+      <div class="card p-5">
+        <p class="stat-label">Travelers</p>
+        <p class="mt-1 font-semibold text-slate-900">{{ trip.travelers }} traveler{{ trip.travelers|pluralize }}</p>
+        <p class="mt-0.5 text-sm text-slate-600">{{ trip.get_travel_style_display }} style</p>
+      </div>
+      <div class="card p-5 sm:col-span-2">
+        <p class="stat-label">Total budget</p>
+        <p class="mt-1 text-xl font-semibold text-slate-900">
+          {% if trip.budget %}{{ trip.budget|floatformat:2 }} {{ trip.currency }}{% else %}No budget set{% endif %}
+        </p>
+        {% url 'budget:expense_list' trip.pk as budget_url %}
+        {% if budget_url %}
+          <a href="{{ budget_url }}" class="mt-3 inline-block text-sm font-medium text-brand-600 hover:text-brand-700">Open budget &amp; expenses &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Interests -->
+    <div class="card mt-4 p-5">
+      <p class="stat-label">Interests</p>
+      {% if trip.interests %}
+        <div class="mt-3 flex flex-wrap gap-2">
+          {% for tag in trip.interests %}<span class="tag">{{ tag }}</span>{% endfor %}
+        </div>
+      {% else %}
+        <p class="mt-1 text-sm text-slate-500">No interests added. <a href="{% url 'trips:edit' trip.pk %}" class="text-brand-600 hover:text-brand-700">Add some</a> to get better suggestions.</p>
+      {% endif %}
+    </div>
+
+    <!-- Notes -->
+    <div class="card mt-4 p-5">
+      <p class="stat-label">Notes</p>
+      {% if trip.notes %}
+        <p class="mt-2 whitespace-pre-line text-sm text-slate-700">{{ trip.notes }}</p>
+      {% else %}
+        <p class="mt-1 text-sm text-slate-500">No notes yet.</p>
+      {% endif %}
+    </div>
+
+    <p class="mt-6 text-xs text-slate-400">Created {{ trip.created_at|date:"M j, Y" }} · Last updated {{ trip.updated_at|date:"M j, Y" }}</p>
+  </div>
+</div>
+{% endblock %}

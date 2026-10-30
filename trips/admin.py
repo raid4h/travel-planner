@@ -1,3 +1,10 @@
+# =====================================================================
+# File: trips/admin.py
+# Purpose: Shows trips models in the Django admin site.
+# Contains:
+#   - TripAdmin: list columns, filters and search for Trips.
+# =====================================================================
+
 from django.contrib import admin
 
 from .models import Trip

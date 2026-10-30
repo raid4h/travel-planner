@@ -1,0 +1,115 @@
+{% comment %}
+=====================================================================
+File: templates/partials/navbar.html
+Purpose: The top navigation bar. base.html includes it on every page.
+Contains:
+  - Logo + app name (links home)
+  - Logged-out version: "Log In" link and "Get Started" button
+  - Logged-in version: Dashboard / My Trips / Destinations / Budget
+    links (current page is highlighted), "+ New Trip" button and a
+    user menu (Profile, Log out)
+URL names it needs:
+  accounts:landing, accounts:login, accounts:register,
+  accounts:profile, accounts:logout, trips:list, trips:create
+  and (optional) dashboard:home, destination-page, budget:index -
+  those links only appear once the URL name exists.
+=====================================================================
+{% endcomment %}
+{% url 'dashboard:home' as dashboard_url %}
+{% firstof user.get_full_name user.username as display_name %}
+{% with ns=request.resolver_match.namespace %}
+<header class="sticky top-0 z-40 border-b border-slate-200 bg-white">
+  <nav class="container-page flex h-16 items-center justify-between gap-3" aria-label="Main">
+
+    {# ---------- Left side: logo and page links ---------- #}
+    <div class="flex items-center gap-2 sm:gap-6">
+      <a href="{% if user.is_authenticated %}{% if dashboard_url %}{{ dashboard_url }}{% else %}{% url 'trips:list' %}{% endif %}{% else %}{% url 'accounts:landing' %}{% endif %}"
+         class="flex items-center gap-2.5">
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
+          <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+          </svg>
+        </span>
+        <span class="hidden text-base font-bold text-slate-900 sm:inline">Travel Planner</span>
+        {% if not user.is_authenticated %}<span class="badge-blue">AI</span>{% endif %}
+      </a>
+
+      {% if user.is_authenticated %}
+        <div class="flex items-center gap-1">
+          {% if dashboard_url %}
+            <a href="{{ dashboard_url }}" class="nav-link {% if ns == 'dashboard' %}nav-link-active{% endif %}"
+               {% if ns == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+          {% endif %}
+          <a href="{% url 'trips:list' %}" class="nav-link {% if ns == 'trips' %}nav-link-active{% endif %}"
+             {% if ns == 'trips' %}aria-current="page"{% endif %}>My Trips</a>
+          {% url 'destination-page' as destinations_url %}
+          {% if destinations_url %}
+            <a href="{{ destinations_url }}" class="nav-link {% if request.path == destinations_url %}nav-link-active{% endif %}">Destinations</a>
+          {% endif %}
+          {% url 'budget:index' as budget_url %}
+          {% if budget_url %}
+            <a href="{{ budget_url }}" class="nav-link {% if ns == 'budget' %}nav-link-active{% endif %}">Budget</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    {# ---------- Right side: actions ---------- #}
+    <div class="flex items-center gap-2 sm:gap-3">
+      {% if user.is_authenticated %}
+
+        <a href="{% url 'trips:create' %}" class="btn-primary" aria-label="New trip">
+          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14"/><path d="M12 5v14"/>
+          </svg>
+          <span class="hidden sm:inline">New Trip</span>
+        </a>
+
+        <span class="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden="true"></span>
+
+        {# User menu: <details> opens and closes without any JavaScript #}
+        <details class="relative" id="user-menu">
+          <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">{{ display_name|first|upper }}</span>
+            <span class="hidden max-w-[10rem] truncate text-xs font-semibold text-slate-700 md:inline">{{ display_name }}</span>
+            <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </summary>
+
+          <div class="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+            <div class="border-b border-slate-100 px-3 py-2">
+              <p class="truncate text-sm font-semibold text-slate-900">{{ display_name }}</p>
+              {% if user.email %}<p class="truncate text-xs text-slate-500">{{ user.email }}</p>{% endif %}
+            </div>
+            <a href="{% url 'accounts:profile' %}" class="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+              <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              Profile
+            </a>
+            {# Logging out must be a POST request, so it is a small form #}
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+                            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+                </svg>
+                Log out
+              </button>
+            </form>
+          </div>
+        </details>
+
+      {% else %}
+
+        <a href="{% url 'accounts:login' %}" class="nav-link">Log In</a>
+        <a href="{% url 'accounts:register' %}" class="btn-primary">Get Started</a>
+
+      {% endif %}
+    </div>
+
+  </nav>
+</header>
+{% endwith %}

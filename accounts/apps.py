@@ -1,3 +1,10 @@
+# =====================================================================
+# File: accounts/apps.py
+# Purpose: App configuration for accounts.
+# Contains:
+#   - AccountsConfig: registers the app and loads signals on startup.
+# =====================================================================
+
 from django.apps import AppConfig
 
 

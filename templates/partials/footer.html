@@ -1,0 +1,16 @@
+{% comment %}
+=====================================================================
+File: templates/partials/footer.html
+Purpose: The thin footer at the bottom of every page.
+         base.html includes it.
+Contains:
+  - Copyright line with the current year (filled in automatically)
+  - The app tagline
+=====================================================================
+{% endcomment %}
+<footer class="border-t border-slate-200 bg-white">
+  <div class="container-page flex flex-col items-center justify-between gap-1 py-6 text-xs text-slate-500 sm:flex-row">
+    <p>&copy; {% now "Y" %} Travel Planner. All rights reserved.</p>
+    <p>Plan smarter. Travel better.</p>
+  </div>
+</footer>

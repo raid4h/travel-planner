@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Django's command-line utility for administrative tasks."""
+"""
+Django's command-line utility for administrative tasks.
+Terminal 1: python manage.py runserver
+Terminal 2: npm run dev:css
+http://127.0.0.1:8000/
+"""
 import os
 import sys
 

@@ -1,3 +1,10 @@
+# =====================================================================
+# File: accounts/models.py
+# Purpose: Database models for the accounts app.
+# Contains:
+#   - Profile: extra info about a user (home country, bio).
+# =====================================================================
+
 from django.conf import settings
 from django.db import models
 

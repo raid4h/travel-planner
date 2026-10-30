@@ -1,3 +1,14 @@
+# =====================================================================
+# File: trips/models.py
+# Purpose: Database model for a trip (the central table of the app).
+# Contains:
+#   - Trip: one planned trip, owned by one user. Holds destination,
+#     dates, travelers, travel style, interest tags, budget, notes
+#     and the archived flag.
+#   - Trip.status / Trip.duration_days: values calculated from dates.
+#   - Trip.clean(): friendly validation used by forms and the admin.
+# =====================================================================
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -16,16 +27,14 @@ class Trip(models.Model):
         ADVENTURE = "adventure", "Adventure"
         RELAXED = "relaxed", "Relaxed"
 
-    INTEREST_CHOICES = [
-        ("food", "Food"),
-        ("culture", "Culture"),
-        ("nature", "Nature"),
-        ("adventure", "Adventure"),
-        ("nightlife", "Nightlife"),
-        ("shopping", "Shopping"),
-        ("history", "History"),
-        ("relaxation", "Relaxation"),
+    # Quick-pick suggestions shown as chips in the form. Users can also
+    # type any tag they like (e.g. "Shrines"), so these are NOT enforced.
+    SUGGESTED_INTERESTS = [
+        "Food", "Culture", "Nature", "Adventure",
+        "Nightlife", "Shopping", "History", "Relaxation",
     ]
+    MAX_INTERESTS = 15
+    MAX_INTEREST_LENGTH = 40
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -34,7 +43,7 @@ class Trip(models.Model):
     )
     title = models.CharField(max_length=120)
     destination = models.CharField(max_length=120)
-    country = models.CharField(max_length=100)
+    country = models.CharField(max_length=100, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
     travelers = models.PositiveSmallIntegerField(
@@ -80,16 +89,29 @@ class Trip(models.Model):
 
     def clean(self):
         errors = {}
+
         if self.start_date and self.end_date and self.end_date < self.start_date:
             errors["end_date"] = "End date cannot be before the start date."
-        valid_interests = {key for key, _ in self.INTEREST_CHOICES}
-        unknown = [i for i in (self.interests or []) if i not in valid_interests]
-        if unknown:
-            errors["interests"] = f"Unknown interest(s): {', '.join(map(str, unknown))}."
+
+        # Interests: a list of free-text tags. Trim, drop blanks and duplicates.
+        tags = []
+        for raw in self.interests or []:
+            tag = str(raw).strip()
+            if tag and tag.lower() not in (t.lower() for t in tags):
+                tags.append(tag)
+        if len(tags) > self.MAX_INTERESTS:
+            errors["interests"] = f"Please use at most {self.MAX_INTERESTS} interests."
+        elif any(len(t) > self.MAX_INTEREST_LENGTH for t in tags):
+            errors["interests"] = (
+                f"Each interest must be {self.MAX_INTEREST_LENGTH} characters or fewer."
+            )
+        self.interests = tags
+
         if self.currency:
             self.currency = self.currency.strip().upper()
             if len(self.currency) != 3 or not self.currency.isalpha():
                 errors["currency"] = "Use a 3-letter currency code, e.g. USD."
+
         if errors:
             raise ValidationError(errors)
 
