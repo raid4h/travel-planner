@@ -33,4 +33,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),       #Nafisa
     path('', include('destinations.urls')),   #Raidah's feature
+    path('', include('budget.urls')),         #Alimul's feature (Budget & Expenses)
+    path('', include('dashboard.urls')),      #Alimul's feature (Dashboard)
 ]
