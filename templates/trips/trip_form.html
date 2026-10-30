@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% comment %}
+=====================================================================
+File: templates/trips/trip_form.html
+Purpose: The "New trip" and "Edit trip" page (same form for both).
+         URLs: /trips/new/ and /trips/<id>/edit/
+Contains:
+  - Section 1 "Trip basics": title, destination, country
+  - Section 2 "Dates and travelers": start/end date, travelers, style
+  - Section 3 "Interests": comma-separated tags (static/js/common.js
+    turns the box into tag chips with quick-pick suggestions)
+  - Section 4 "Budget": amount and currency
+  - Section 5 "Notes"
+  - Cancel and Save buttons
+Used by: trips.views.TripCreateView and trips.views.TripUpdateView
+         (form = trips.forms.TripForm, "is_edit" tells which one)
+=====================================================================
+{% endcomment %}
+
+{% block title %}{% if is_edit %}Edit trip{% else %}New trip{% endif %} | Travel Planner{% endblock %}
+
+{% block content %}
+<div class="container-page py-8">
+  <div class="mx-auto max-w-3xl">
+
+    <a href="{% if is_edit %}{% url 'trips:detail' trip.pk %}{% else %}{% url 'trips:list' %}{% endif %}"
+       class="text-sm text-slate-600 hover:text-slate-900">&larr; {% if is_edit %}Back to trip{% else %}Back to my trips{% endif %}</a>
+
+    <h1 class="mt-4 text-2xl font-bold text-slate-900">{% if is_edit %}Edit trip{% else %}Plan a new trip{% endif %}</h1>
+    <p class="mt-1 text-sm text-slate-600">
+      {% if is_edit %}Update the details below and save your changes.{% else %}Tell us the basics. You can change everything later.{% endif %}
+    </p>
+
+    <form method="post" novalidate class="mt-6 space-y-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- 1. Basics -->
+      <section class="card p-6">
+        <h2 class="font-semibold text-slate-900">Trip basics</h2>
+        <div class="mt-5 grid gap-5 sm:grid-cols-2">
+          {% include "partials/form_field.html" with field=form.title class="sm:col-span-2" %}
+          {% include "partials/form_field.html" with field=form.destination %}
+          {% include "partials/form_field.html" with field=form.country %}
+        </div>
+      </section>
+
+      <!-- 2. Dates and travelers -->
+      <section class="card p-6">
+        <h2 class="font-semibold text-slate-900">Dates and travelers</h2>
+        <div class="mt-5 grid gap-5 sm:grid-cols-2">
+          {% include "partials/form_field.html" with field=form.start_date %}
+          {% include "partials/form_field.html" with field=form.end_date %}
+          {% include "partials/form_field.html" with field=form.travelers %}
+          {% include "partials/form_field.html" with field=form.travel_style %}
+        </div>
+      </section>
+
+      <!-- 3. Interests -->
+      <section class="card p-6">
+        <h2 class="font-semibold text-slate-900">Interests</h2>
+        <p class="mt-1 text-sm text-slate-600">Helps us suggest places and activities you will enjoy.</p>
+        <div class="mt-5" data-tag-input data-suggestions="{{ form.suggested_interests|join:',' }}">
+          {% include "partials/form_field.html" with field=form.interests %}
+        </div>
+      </section>
+
+      <!-- 4. Budget -->
+      <section class="card p-6">
+        <h2 class="font-semibold text-slate-900">Budget</h2>
+        <div class="mt-5 grid gap-5 sm:grid-cols-2">
+          {% include "partials/form_field.html" with field=form.budget %}
+          {% include "partials/form_field.html" with field=form.currency %}
+        </div>
+      </section>
+
+      <!-- 5. Notes -->
+      <section class="card p-6">
+        <h2 class="font-semibold text-slate-900">Notes</h2>
+        <div class="mt-5">
+          {% include "partials/form_field.html" with field=form.notes %}
+        </div>
+      </section>
+
+      <div class="flex items-center justify-end gap-3">
+        <a href="{% if is_edit %}{% url 'trips:detail' trip.pk %}{% else %}{% url 'trips:list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{% if is_edit %}Save changes{% else %}Create trip{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

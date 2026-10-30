@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% comment %}
+=====================================================================
+File: templates/trips/trip_list.html
+Purpose: The "My Trips" page (/trips/).
+Contains:
+  - Page title with a "New Trip" button
+  - Search box (title, destination, country)
+  - Filter tabs with counts: All / Upcoming / Ongoing / Completed / Archived
+  - A grid of trip cards (title, place, dates, status, travelers,
+    budget, interest tags)
+  - Empty states: one for brand-new users, one for "no results"
+Used by: trips.views.TripListView
+=====================================================================
+{% endcomment %}
+
+{% block title %}My trips | Travel Planner{% endblock %}
+
+{% block content %}
+<div class="container-page py-8">
+
+  <!-- Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">My trips</h1>
+      <p class="mt-1 text-sm text-slate-600">Plan, track and revisit all your journeys.</p>
+    </div>
+    <a href="{% url 'trips:create' %}" class="btn btn-primary self-start sm:self-auto">+ New trip</a>
+  </div>
+
+  {% if total_trips == 0 %}
+    <!-- Empty state: user has no trips at all -->
+    <div class="card mt-8 px-6 py-16 text-center">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-3xl">🧳</div>
+      <h2 class="mt-4 text-lg font-semibold text-slate-900">No trips yet</h2>
+      <p class="mx-auto mt-1 max-w-sm text-sm text-slate-600">
+        Create your first trip to start planning dates, budget and interests.
+      </p>
+      <a href="{% url 'trips:create' %}" class="btn btn-primary mt-6">Create your first trip</a>
+    </div>
+
+  {% else %}
+
+    <!-- Search + filter tabs -->
+    <div class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex flex-wrap gap-2">
+        {% for key, label, count in filters %}
+          <a href="?filter={{ key }}{% if search %}&q={{ search|urlencode }}{% endif %}"
+             class="rounded-full border px-3.5 py-1.5 text-sm font-medium transition
+                    {% if current_filter == key %}border-brand-600 bg-brand-600 text-white{% else %}border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% endif %}">
+            {{ label }}
+            <span class="ml-1 {% if current_filter == key %}text-brand-100{% else %}text-slate-400{% endif %}">{{ count }}</span>
+          </a>
+        {% endfor %}
+      </div>
+
+      <form method="get" class="flex gap-2 lg:w-96">
+        <input type="hidden" name="filter" value="{{ current_filter }}">
+        <input type="search" name="q" value="{{ search }}" placeholder="Search by title, destination or country"
+               class="form-input">
+        <button type="submit" class="btn btn-secondary">Search</button>
+      </form>
+    </div>
+
+    {% if trips %}
+      <!-- Trip cards -->
+      <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {% for trip in trips %}
+          <a href="{% url 'trips:detail' trip.pk %}" class="card flex flex-col p-5 transition hover:border-brand-300 hover:shadow-md">
+            <div class="flex items-start justify-between gap-3">
+              <h2 class="font-semibold text-slate-900 line-clamp-2">{{ trip.title }}</h2>
+              {% if trip.is_archived %}
+                <span class="badge badge-amber">Archived</span>
+              {% elif trip.status == "upcoming" %}
+                <span class="badge badge-blue">Upcoming</span>
+              {% elif trip.status == "ongoing" %}
+                <span class="badge badge-green">Ongoing</span>
+              {% else %}
+                <span class="badge badge-gray">Completed</span>
+              {% endif %}
+            </div>
+
+            <p class="mt-1 text-sm text-slate-600">
+              📍 {{ trip.destination }}{% if trip.country %}, {{ trip.country }}{% endif %}
+            </p>
+
+            <dl class="mt-4 space-y-1.5 text-sm text-slate-600">
+              <div class="flex items-center gap-2">
+                <dt aria-label="Dates">📅</dt>
+                <dd>{{ trip.start_date|date:"M j, Y" }} – {{ trip.end_date|date:"M j, Y" }}
+                  <span class="text-slate-400">({{ trip.duration_days }} day{{ trip.duration_days|pluralize }})</span></dd>
+              </div>
+              <div class="flex items-center gap-2">
+                <dt aria-label="Travelers">👥</dt>
+                <dd>{{ trip.travelers }} traveler{{ trip.travelers|pluralize }}</dd>
+              </div>
+              <div class="flex items-center gap-2">
+                <dt aria-label="Budget">💰</dt>
+                <dd>{% if trip.budget %}{{ trip.budget|floatformat:2 }} {{ trip.currency }}{% else %}No budget set{% endif %}</dd>
+              </div>
+            </dl>
+
+            {% if trip.interests %}
+              <div class="mt-4 flex flex-wrap gap-1.5">
+                {% for tag in trip.interests|slice:":3" %}<span class="tag">{{ tag }}</span>{% endfor %}
+                {% if trip.interests|length > 3 %}<span class="tag">+{{ trip.interests|length|add:"-3" }}</span>{% endif %}
+              </div>
+            {% endif %}
+          </a>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <!-- Empty state: nothing matches this tab / search -->
+      <div class="card mt-6 px-6 py-14 text-center">
+        <h2 class="text-lg font-semibold text-slate-900">No trips found</h2>
+        <p class="mt-1 text-sm text-slate-600">
+          {% if search %}Nothing matches “{{ search }}” here. Try a different search or tab.{% else %}You have no {{ current_filter }} trips right now.{% endif %}
+        </p>
+        <a href="{% url 'trips:list' %}" class="btn btn-secondary mt-5">Clear filters</a>
+      </div>
+    {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

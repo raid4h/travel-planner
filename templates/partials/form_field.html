@@ -1,0 +1,19 @@
+{% comment %}
+=====================================================================
+File: templates/partials/form_field.html
+Purpose: One form field laid out the standard way: label, input,
+         help text and red error messages.
+Use it like this:
+  {% include "partials/form_field.html" with field=form.title %}
+Optional: add  class="sm:col-span-2"  (inside the "with") to make the
+field wider in a grid.
+=====================================================================
+{% endcomment %}
+<div class="{{ class }}">
+  <label for="{{ field.id_for_label }}" class="form-label">
+    {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+  </label>
+  {{ field }}
+  {% if field.help_text and not field.errors %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+  {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+</div>

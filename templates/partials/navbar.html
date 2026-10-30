@@ -92,4 +92,24 @@ URL names it needs:
             {# Logging out must be a POST request, so it is a small form #}
             <form method="post" action="{% url 'accounts:logout' %}">
               {% csrf_token %}
-              <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm
+                            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+                </svg>
+                Log out
+              </button>
+            </form>
+          </div>
+        </details>
+
+      {% else %}
+
+        <a href="{% url 'accounts:login' %}" class="nav-link">Log In</a>
+        <a href="{% url 'accounts:register' %}" class="btn-primary">Get Started</a>
+
+      {% endif %}
+    </div>
+
+  </nav>
+</header>
+{% endwith %}
