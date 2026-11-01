@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AI Itinerary Planner | Travel Planner{% endblock %}
+
+{% block content %}
+
+<div class="mx-auto max-w-6xl px-4 py-10">
+
+    <!-- Page Heading -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">
+            AI Itinerary Planner
+        </h1>
+
+        <p class="mt-2 text-gray-600">
+            Generate your personalized travel itinerary with AI.
+        </p>
+    </div>
+
+    <!-- Trip Selection Form -->
+    <div class="rounded-xl border bg-white p-6 shadow-sm">
+
+        {% csrf_token %}
+
+        <h2 class="mb-4 text-xl font-semibold">
+            Generate Your Itinerary
+        </h2>
+
+        <label for="tripSelect"
+               class="mb-2 block font-medium text-gray-700">
+            Select Your Trip
+        </label>
+
+        <select id="tripSelect"
+                class="w-full rounded-lg border border-gray-300 p-3">
+
+            <option value="">Choose a trip</option>
+
+            {% for trip in trips %}
+                <option value="{{ trip.id }}">
+                    {{ trip.title }} - {{ trip.destination }}
+                </option>
+            {% empty %}
+                <option value="" disabled>
+                    No trips available. Please create a trip first.
+                </option>
+            {% endfor %}
+
+        </select>
+
+        <button id="generateBtn"
+                type="button"
+                class="mt-5 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700">
+
+            Generate AI Itinerary
+
+        </button>
+
+        <p id="statusMessage"
+           class="mt-4 text-sm text-gray-600"
+           role="status"
+           aria-live="polite">
+        </p>
+
+    </div>
+
+    <!-- Generated Itinerary -->
+    <div id="itineraryResult" class="mt-8"></div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+<script src="{% static 'js/itinerary.js' %}" defer></script>
+
+{% endblock %}
