@@ -38,5 +38,6 @@ urlpatterns = [
     path('', include('trips.urls')),          #Nafisa (Trip management)
     path('', include('destinations.urls')),   #Raidah's feature
     path('', include('budget.urls')),         #Alimul's feature (Budget & Expenses)
-    path('', include('dashboard.urls')),      #Alimul's feature (Dashboard)
+    path('', include('dashboard.urls')),
+    path('', include('itinerary.urls')),      #Mariam's feature(itinerary)
 ]
